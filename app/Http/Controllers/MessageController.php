@@ -3,32 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\Message;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    // this index will get us all the messages between 2 users :
+    public function index(User $user)
     {
-        //
+        $auth_id = Auth::id();
+        $messages = Message::whereIn(
+            'sender_id',
+            [$auth_id ,$user->id ],)->whereIn(
+                'receiver_id',
+                [$auth_id,$user->id]
+            )->orderBy('created_at')->get();
+
+        return response()->json([
+            'success'=>true,
+            'data'=>$messages
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    //function to store new messages
     public function store(Request $request)
     {
-        //
+        $validated_message = $request->validate([
+            'sender_id'=> ['required , exists:users,id'],
+            'receiver_id'=> ['required', 'exists:users,id'],
+            'message'=> ['required'],
+        ]);
+
+        $new_message = Message::create($validated_message);
+
+        return response()->json([
+            'success' => true,
+            'data' => $new_message,
+        ]);
+
     }
 
     /**
